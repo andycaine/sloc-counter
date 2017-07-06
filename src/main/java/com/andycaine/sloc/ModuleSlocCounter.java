@@ -1,19 +1,27 @@
 package com.andycaine.sloc;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.IOException;
-import java.nio.file.FileVisitResult;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.SimpleFileVisitor;
+import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.util.ArrayList;
 import java.util.List;
 
 public class ModuleSlocCounter {
 
-    private final List<Path> pathsToExclude;
+    private final Logger logger = LoggerFactory.getLogger(getClass());
 
-    public ModuleSlocCounter(List<Path> pathsToExclude) {
-        this.pathsToExclude = pathsToExclude;
+    private final List<PathMatcher> pathsToExclude;
+
+    public ModuleSlocCounter(List<String> pathsToExclude) {
+        List<PathMatcher> globs = new ArrayList<>();
+
+        for (String glob : pathsToExclude) {
+            globs.add(FileSystems.getDefault().getPathMatcher("glob:" + glob));
+        }
+        this.pathsToExclude = globs;
     }
 
     public int sloc(Path path) throws IOException {
@@ -51,15 +59,14 @@ public class ModuleSlocCounter {
         }
 
         private boolean shouldIgnore(Path path) {
-            for (Path exclude : pathsToExclude) {
-                if (path.normalize().equals(exclude.normalize())) {
+            for (PathMatcher exclude : pathsToExclude) {
+                if (exclude.matches(path)) {
+                    logger.debug("Ignoring path " + path.normalize());
                     return true;
                 }
             }
             return false;
         }
 
-
     }
-
 }
