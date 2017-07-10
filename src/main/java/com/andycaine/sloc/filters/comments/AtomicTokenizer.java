@@ -19,7 +19,8 @@ class AtomicTokenizer {
     }
 
     /**
-     * Tokenizes the given string into characters + tokensToRecognize when found.
+     * Tokenizes the given string into characters + tokensToRecognize
+     * when found.
      *
      * @param string    the string to tokenize
      * @return          a list of characters + tokensToRecognize
@@ -28,21 +29,21 @@ class AtomicTokenizer {
         ArrayList<String> result = new ArrayList<>();
 
         while (!StringUtils.isEmpty(string)) {
-            for (String token : tokensToRecognize) {
-                if (string.startsWith(token)) {
-                    result.add(token);
-                    string = string.substring(token.length());
-                }
-            }
-            if (!StringUtils.isEmpty(string)) {
-                result.add(string.substring(0, 1));
-                string = string.substring(1);
-            }
-
+            String token = nextToken(string);
+            result.add(token);
+            string = string.substring(token.length());
         }
 
         return result;
     }
 
+    private String nextToken(String string) {
+        for (String token : tokensToRecognize) {
+            if (string.startsWith(token)) {
+                return token;
+            }
+        }
+        return string.substring(0, 1);
+    }
 
 }

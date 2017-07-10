@@ -33,6 +33,6 @@ public class ModuleSlocCounterTest {
 
         int sloc = counter.sloc(Paths.get("."));
 
-        assertEquals(248, sloc);
+        assertEquals(245, sloc);
     }
 }
