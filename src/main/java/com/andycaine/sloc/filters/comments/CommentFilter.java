@@ -1,5 +1,7 @@
 package com.andycaine.sloc.filters.comments;
 
+import org.apache.commons.lang3.StringUtils;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -34,22 +36,47 @@ public class CommentFilter {
      */
     String filter(String code) {
         StringBuilder result = new StringBuilder();
-        AtomicTokenizer tokenizer = new AtomicTokenizer(tokensToRecognize());
+        List<String> importantTokens = new ArrayList<>();
+        importantTokens.addAll(lineCommentMarkers);
+        importantTokens.add(blockCommentStart);
+        importantTokens.add("\"");
 
-        for (String token : tokenizer.tokenize(code)) {
-            filterState.handle(token, result, this);
+        while (StringUtils.isNotEmpty(code)) {
+
+            String nextImportantToken = null;
+            int index = code.length();
+            for (String importantToken : importantTokens) {
+                int i = code.indexOf(importantToken);
+                if (i >= 0 && i < index) {
+                    index = i;
+                    nextImportantToken = importantToken;
+                }
+            }
+
+            if (nextImportantToken == null) {
+                result.append(code);
+                return result.toString();
+            }
+
+            result.append(code.substring(0, index));
+            code = code.substring(index);
+
+            if (nextImportantToken.equals("\"")) {
+                result.append(code.substring(0, 1));
+                code = code.substring(1);
+
+                int nextIndex = code.indexOf("\"");
+                result.append(code.substring(0, nextIndex + 1));
+                code = code.substring(nextIndex + 1);
+            } else if (nextImportantToken.equals(blockCommentStart)) {
+                int nextIndex = code.indexOf(blockCommentEnd);
+                code = code.substring(nextIndex + blockCommentEnd.length());
+            } else if (lineCommentMarkers.contains(nextImportantToken)) {
+                int nextIndex = code.indexOf("\n");
+                code = code.substring(nextIndex + 1);
+            }
         }
-
         return result.toString();
-    }
-
-    private List<String> tokensToRecognize() {
-        List<String> result = new ArrayList<>();
-        result.add(blockCommentEnd);
-        result.add(blockCommentStart);
-        result.addAll(lineCommentMarkers);
-        result.add("\r\n");
-        return result;
     }
 
     void setFilterState(CommentFilterState filterState) {

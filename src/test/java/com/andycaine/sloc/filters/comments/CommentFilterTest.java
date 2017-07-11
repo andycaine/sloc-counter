@@ -25,9 +25,7 @@ public class CommentFilterTest {
         String filtered = filter.filter(input);
 
         String expected =
-                "\r\n" +
                 "should not be removed \n" +
-                "\n" +
                 "should not \n" +
                 "should not removed\n";
 
