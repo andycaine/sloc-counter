@@ -20,8 +20,6 @@ public class CommentFilter {
 
     private final List<String> lineCommentMarkers;
 
-    private CommentFilterState filterState = new NotInQuotesOrComments();
-
     public CommentFilter(String blockCommentStart, String blockCommentEnd, String... lineCommentMarkers) {
         this.blockCommentStart = blockCommentStart;
         this.blockCommentEnd = blockCommentEnd;
@@ -36,63 +34,77 @@ public class CommentFilter {
      */
     String filter(String code) {
         StringBuilder result = new StringBuilder();
-        List<String> importantTokens = new ArrayList<>();
-        importantTokens.addAll(lineCommentMarkers);
-        importantTokens.add(blockCommentStart);
-        importantTokens.add("\"");
 
         while (StringUtils.isNotEmpty(code)) {
 
-            String nextImportantToken = null;
-            int index = code.length();
-            for (String importantToken : importantTokens) {
-                int i = code.indexOf(importantToken);
-                if (i >= 0 && i < index) {
-                    index = i;
-                    nextImportantToken = importantToken;
-                }
-            }
+            Token token = findNextCommentOrQuoteStartToken(code);
 
-            if (nextImportantToken == null) {
+            if (token == null) {
                 result.append(code);
                 return result.toString();
             }
 
-            result.append(code.substring(0, index));
-            code = code.substring(index);
+            result.append(code.substring(0, token.getIndex()));
+            code = code.substring(token.getIndex());
 
-            if (nextImportantToken.equals("\"")) {
+            if (token.getValue().equals("\"")) {
                 result.append(code.substring(0, 1));
                 code = code.substring(1);
 
                 int nextIndex = code.indexOf("\"");
                 result.append(code.substring(0, nextIndex + 1));
                 code = code.substring(nextIndex + 1);
-            } else if (nextImportantToken.equals(blockCommentStart)) {
+            } else if (token.getValue().equals(blockCommentStart)) {
                 int nextIndex = code.indexOf(blockCommentEnd);
                 code = code.substring(nextIndex + blockCommentEnd.length());
-            } else if (lineCommentMarkers.contains(nextImportantToken)) {
+            } else if (lineCommentMarkers.contains(token.getValue())) {
                 int nextIndex = code.indexOf("\n");
-                code = code.substring(nextIndex + 1);
+                if (nextIndex == -1) { // end of file
+                    code = "";
+                } else {
+                    code = code.substring(nextIndex + 1);
+                }
             }
         }
         return result.toString();
     }
 
-    void setFilterState(CommentFilterState filterState) {
-        this.filterState = filterState;
+    private Token findNextCommentOrQuoteStartToken(String code) {
+        List<String> tokensToFind = new ArrayList<>();
+        tokensToFind.addAll(lineCommentMarkers);
+        tokensToFind.add(blockCommentStart);
+        tokensToFind.add("\"");
+
+        Token token = null;
+        for (String tokenToFind : tokensToFind) {
+            int index = code.indexOf(tokenToFind);
+            if (index >= 0 && (token == null || index < token.getIndex())) {
+                if (!(tokenToFind.equals("\"") && index > 0 && code.charAt(index - 1) == '\\')) {
+                    token = new Token(tokenToFind, index);
+                }
+            }
+        }
+
+        return token;
     }
 
-    boolean isLineCommentStart(String token) {
-        return lineCommentMarkers.contains(token);
-    }
+    private class Token {
 
-    boolean isBlockCommentStart(String token) {
-        return blockCommentStart.equals(token);
-    }
+        private final String value;
+        private final int index;
 
-    boolean isBlockCommentEnd(String token) {
-        return blockCommentEnd.equals(token);
+        public Token(String value, int index) {
+            this.value = value;
+            this.index = index;
+        }
+
+        public String getValue() {
+            return value;
+        }
+
+        public int getIndex() {
+            return index;
+        }
     }
 
     /**

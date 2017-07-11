@@ -1,5 +1,6 @@
 package com.andycaine.sloc.filters.comments;
 
+import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
@@ -39,6 +40,24 @@ public class CommentFilterTest {
         String filtered = filter.filter(input);
 
         assertEquals(input, filtered);
+    }
+
+    @Test
+    public void shouldRemoveCommentsAfterEscapedQuotes() throws Exception {
+        String input = "should \\\"//remove\\\"";
+
+        String filtered = filter.filter(input);
+
+        assertEquals("should \\\"", filtered);
+    }
+
+    @Test
+    public void shouldRemoveLineCommentsAtEndOfFile() throws Exception {
+        String input = "should //remove";
+
+        String filtered = filter.filter(input);
+
+        assertEquals("should ", filtered);
     }
 
 }
